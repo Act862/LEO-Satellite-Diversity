@@ -123,7 +123,7 @@ for ep = 1:numEpisodes
         U = sigma_e2 / (abs(h_hat)^2 + eps);  % uncertainty measure
         
         % Pick a nominal Eb/N0 (use a random sample of link conditions, as before)
-        ebno_nom_dB = 10*rand; % small randomization (0..10 dB); adapt to your system
+        ebno_nom_dB = -20 + (10 - (-20)) * rand(1,1); % small randomization (0..10 dB); adapt to your system
         ebno_nom_lin = 10^(ebno_nom_dB/10);
         ebno_faded_lin = ebno_nom_lin * h_abs2;
         

@@ -3,8 +3,8 @@ clear; clc;
 
 %% Simulation time settings
 startTime = datetime(2025,09,11,12,01,0);
-endTime = startTime + minutes(5);
-sampleTime = 10;                    % seconds
+endTime = startTime + seconds(1);
+sampleTime = 0.1;                    % seconds
 t = startTime:seconds(sampleTime):endTime;
 
 %% Scenario & satellites
