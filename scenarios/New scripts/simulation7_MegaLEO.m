@@ -2,11 +2,11 @@
 clear;
 clc;
 %%  Scenario Setup
-duration = seconds(1);
+duration = minutes(1);
 %   generate the scenario timeline
 startTime = datetime(2025,9,11,9,16,1);
 endTime = startTime + duration;
-sampleTime = 0.1;
+sampleTime = 10;
 
 sc = satelliteScenario(startTime,endTime,sampleTime);
 
@@ -267,7 +267,7 @@ for n = 1:length(snrdB)
         dataIn = randi([0 1],numSymPerFrame*k,1);
         dataSym = bit2int(dataIn, k);
         txSig = qammod(dataSym, M);
-        rxSig = awgn(txSig,snrdB(n),'measured');
+        rxSig = awgn(txSig,snrdB(n),'measured')./h(n);
         rxSym = qamdemod(rxSig,M);
         dataOut = int2bit(rxSym,k);
         nErrors = biterr(dataIn, dataOut);
@@ -297,7 +297,7 @@ for n = 1:length(snrdB)
         dataIn = randi([0 1],numSymPerFrame*k,1);
         dataSym = bit2int(dataIn, k);
         txSig = pskmod(dataSym, M, pi/M);
-        rxSig = awgn(txSig,snrdB(n),'measured');
+        rxSig = awgn(txSig,snrdB(n),'measured')./h(n);
         rxSym = pskdemod(rxSig,M,pi/M);
         dataOut = int2bit(rxSym,k);
         nErrors = biterr(dataIn, dataOut);
@@ -327,7 +327,7 @@ for n = 1:length(snrdB)
         dataIn = randi([0 1],numSymPerFrame*k,1);
         dataSym = bit2int(dataIn, k);
         txSig = qammod(dataSym, M);
-        rxSig = awgn(txSig,snrdB(n),'measured');
+        rxSig = awgn(txSig,snrdB(n),'measured')./h(n);
         rxSym = qamdemod(rxSig,M);
         dataOut = int2bit(rxSym,k);
         nErrors = biterr(dataIn, dataOut);

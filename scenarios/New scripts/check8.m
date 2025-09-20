@@ -3,8 +3,8 @@ clear; clc;
 
 %% Simulation time settings
 startTime = datetime(2025,09,11,12,01,0);
-endTime = startTime + seconds(1);
-sampleTime = 0.1;                    % seconds
+endTime = startTime + minutes(5);
+sampleTime = 10;                    % seconds
 t = startTime:seconds(sampleTime):endTime;
 
 %% Scenario & satellites
@@ -216,11 +216,11 @@ end
 %% Plots
 figure;
 subplot(1,2,1);
-plot(t,10.^(average_ebnr./10),'LineWidth',2);
-title('average Eb/N_0 vs time'); ylabel('Eb/N_0 (linear)'); xlabel('time'); grid on;
+semilogy(t,10.^(average_ebnr./10),'LineWidth',2);
+title('average Eb/N_0 vs time'); ylabel('Eb/N_0 [Watts]'); xlabel('time'); grid on;
 subplot(1,2,2);
 plot(t,10.^(average_rp./10),'LineWidth',2);
-title('average receiver power vs time'); ylabel('P (linear)'); xlabel('time'); grid on;
+title('average receiver isotropic power vs time'); ylabel('Power [Watts]'); xlabel('time'); grid on;
 
 figure;
 semilogy(t,10.^(snr_mrc./10),'LineWidth',1.5); hold on;
