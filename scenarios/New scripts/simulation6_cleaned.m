@@ -1,5 +1,5 @@
 clear; clc;
-%   We need two satellites and two base stations.
+%   Reinvention of the Scenario6: Two Satellites and Two Ground Stations
 %   The two satellites work as spatial diversity redundant resources.
 %   The one base station sends data to both satellites, meaning it needs two gimbals.
 %   Then both satellites send the data to the one gimbal of the second base station.
@@ -102,19 +102,52 @@ lnk2 = link(gs1Tx2,sat2Rx,sat2Tx,gs2Rx2);
 lnk3 = link(gs1Tx1,sat2Rx,sat2Tx,gs2Rx1);
 lnk4 = link(gs1Tx2,sat1Rx,sat1Tx,gs2Rx2);
 
+%   Also make distinct links for each pair
+link11 = link(gs1Tx1,sat1Rx);
+link12 = link(sat1Tx,gs2Rx1);
+link21 = link(gs1Tx2,sat2Rx);
+link22 = link(sat2Tx,gs2Rx2);
+%   For the final SNR, only the last hop is necessary
+
 lint1 = linkIntervals(lnk1);
 lint2 = linkIntervals(lnk2);
 lint3 = linkIntervals(lnk3);
 lint4 = linkIntervals(lnk4);
 
-[e1,time1] = ebno(lnk1);
-[e2,time2] = ebno(lnk2);
+% [e1,time1] = ebno(lnk1);
+% [e2,time2] = ebno(lnk2);
+
+%   Change the links
+[e1,time1] = ebno(link12);
+[e2,time2] = ebno(link22);
 
 % Plot Eb/No for each link
-t = intersect(time1,time2);
-t = t(e1 ~= -Inf & e2 ~= -Inf);
-ebno_branch1 = e1(intersect(time1,time2) == time1 & e1 ~= -Inf & e2 ~= -Inf);
-ebno_branch2 = e2(intersect(time1,time2) == time2 & e1 ~= -Inf & e2 ~= -Inf);
+% t = intersect(time1,time2);
+t = time1(e1 ~= -Inf & e2 ~= -Inf);
+ebno_branch1 = e1(e1 ~= -Inf & e2 ~= -Inf);
+ebno_branch2 = e2(e1 ~= -Inf & e2 ~= -Inf);
+
+% Latency analysis
+[delay, time] = latency(sat1,gs1); 
+[latency2,time2] = latency(sat1,gs2);
+
+ac = access(sat1,gs2);
+intv = accessIntervals(ac);
+ac2 = access(sat2,gs2);
+intv2 = accessIntervals(ac2);
+
+figure;hold on;
+for i = 1:height(intv2)
+    startTime = intv2.StartTime(i);
+    endTime = intv2.EndTime(i);
+    idx = (e1 ~= -Inf) & (e2 ~= -Inf);
+    plot(time(idx), e1(idx),...
+        'LineWidth', 1.5, 'DisplayName', sprintf('Pass (SC) %d', i));
+    plot(time(idx), e2(idx),...
+        'LineWidth', 1.5, 'DisplayName', sprintf('Pass (MRC) %d', i));
+end
+hold off;
+axis tight;
 
 figure;
 plot(t,ebno_branch1,'LineWidth',1.5); hold on;
@@ -139,8 +172,11 @@ xlabel('Simulated time (datetime)');
 
 % Combined BER Calculation
 figure;
-ber_qpsk = 0.5*(2*qfunc(sqrt(2*10.^(ebno_sc./10))) - (qfunc(sqrt(2*10.^(ebno_sc./10)))).^2);
-ber_qpsk2 = 0.5*(2*qfunc(sqrt(2*10.^(ebno_mrc./10))) - (qfunc(sqrt(2*10.^(ebno_mrc./10)))).^2);
+ber_Theory = berfading(ebno_mrc,"psk",4,1,3);
+% ber_qpsk = 0.5*(2*qfunc(sqrt(2*10.^(ebno_sc./10))) - (qfunc(sqrt(2*10.^(ebno_sc./10)))).^2);
+ber_qpsk = berfading(ebno_sc,"psk",4,1,3);
+ber_qpsk2 = berfading(ebno_mrc,"psk",4,1,3);
+% ber_qpsk2 = 0.5*(2*qfunc(sqrt(2*10.^(ebno_mrc./10))) - (qfunc(sqrt(2*10.^(ebno_mrc./10)))).^2);
 semilogy(t,ber_qpsk,'-x','LineWidth',1.5); hold on;
 semilogy(t,ber_qpsk2,'->','LineWidth',1.5); hold off;
 ylabel('Bit Error Rate');
@@ -148,15 +184,6 @@ xlabel('Simulation time (datetime)');
 legend('SC', 'MRC');
 title('Combined SNR Bit-Error Rate (QPSK)');
 grid on;
-
-% Latency analysis
-[delay, time] = latency(sat1,gs1); 
-[latency2,time2] = latency(sat1,gs2);
-
-ac = access(gs1, sat1);
-intv = accessIntervals(ac);
-ac2 = access(gs2,sat1);
-intv2 = accessIntervals(ac2);
 
 figure; hold on;
 avg_pass_duration = 0;
