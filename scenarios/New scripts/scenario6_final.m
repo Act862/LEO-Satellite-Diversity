@@ -268,6 +268,12 @@ ebnr_sc = 10*log10(max(10.^(ebnr1_lossy./10),10.^(ebnr2_lossy./10)));
 figure;
 plot(time1,ebnr_mrc);hold on;
 plot(time1,ebnr_sc);hold off;
+grid on;
+legend('MRC','SC');
+title('Selection Combining VS Maximal Ratio Combining');
+ylabel('EbNo (dB)');
+xlabel('Simulated time (datetime)');
+axis tight;
 
 %%  Helper Functions
 %   turn antenna gain into the aperture efficiency

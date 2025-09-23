@@ -120,6 +120,7 @@ lint4 = linkIntervals(lnk4);
 %   Change the links
 [e1,time1] = ebno(link12);
 [e2,time2] = ebno(link22);
+%   Note that time1 is the same as time2
 
 % Plot Eb/No for each link
 % t = intersect(time1,time2);
@@ -159,7 +160,7 @@ legend('EbNo for Link1', 'EbNo for Link2');
 title('Received Eb/N_o for each link');
 
 % Combine the Eb/N0 from both links
-ebno_sc = max(ebno_branch1,ebno_branch2);
+ebno_sc = 10*log10(max(10.^(ebno_branch1./10),10.^(ebno_branch2./10)));
 ebno_mrc = 10*log10(10.^(ebno_branch1./10) + 10.^(ebno_branch2./10));
 
 figure;
@@ -169,6 +170,7 @@ legend('SC','MRC');
 title('Selection Combining VS Maximal Ratio Combining');
 ylabel('EbNo (dB)');
 xlabel('Simulated time (datetime)');
+axis tight;
 
 % Combined BER Calculation
 figure;
