@@ -290,45 +290,11 @@ title('Selection Combining VS Maximal Ratio Combining');
 ylabel('EbNo (dB)');
 xlabel('Simulated time (datetime)');
 axis tight;
-%   Display the Margin between the two techniques
-figure;
-plot(time1,abs(ebnr_mrc-ebnr_sc),'LineWidth',1.5);
-grid on;
-title('Selection Combining VS Maximal Ratio Combining');
-ylabel('EbNo (dB)');
-xlabel('Simulated time (datetime)');
-axis tight;
-
-%%  BER Calculation
-ricianChan = comm.RicianChannel( ...
-    KFactor=3,...
-    AveragePathGains=0,...
-    ChannelFiltering=true,...
-    DirectPathDopplerShift=0,...
-    DopplerSpectrum=doppler("Jakes"),...
-    PathDelays=0,...
-    PathGainsOutputPort=true,...
-    RandomStream="mt19937ar with seed",...
-    Seed=randi(1e6),...
-    SampleRate=1e6);
-h = zeros(1,length(ebnr_sc));
-for n=1:length(h)
-    [~,h(n)] = ricianChan(0);
-end
-faded_ebnr_sc = 10*log10(abs(h).*(10.^(ebnr_sc./10)));
-branch1_ber = berawgn(faded_ebnr_sc,"qam",64);
-figure;
-semilogy(ebnr_sc,branch1_ber,'LineWidth',1.5);
-grid on;
-title('Bit-Error Rate of 64-QAM for Selection Combining');
-ylabel('Bit-Error Rate');
-xlabel('E_b/N_o [dB]');
-axis tight;
+%   Display the Margi
 
 %%  Helper Functions
 %   turn antenna gain into the aperture efficiency
 function ea = gain2apertureEfficiency(gain,dishDiameter,lambda)
     %   gain = (pi*diameter/lambda)^2*ea
-    gain_linear = 10^(gain/10);
-    ea = gain_linear/(pi*dishDiameter/lambda)^2;
+    ea = gain/(pi*dishDiameter/lambda)^2;
 end
