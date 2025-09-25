@@ -58,7 +58,7 @@ satRxConfig.ApertureEfficiency = gain2apertureEfficiency(...,
 
 %%  Scenario Section
 %   Scenario Simulation Time
-startTime = datetime(2020,1,11,14,0,0);
+startTime = datetime(2020,1,11,12,0,0);
 stopTime = startTime + days(1);
 sampleTime = 10;
 
@@ -69,7 +69,7 @@ sc = satelliteScenario(startTime,stopTime,sampleTime);
 %   Add satellites to the scenario
 sat1 = satellite(sc,earthRadius+600e3,0,60,0,0,0, ...
     "Name","Sat1","OrbitPropagator","two-body-keplerian");
-sat2 = satellite(sc,earthRadius+600e3,0,50,0,0,0, ...
+sat2 = satellite(sc,earthRadius+600e3,0,55,0,0,0, ...
     "Name","Sat2","OrbitPropagator","two-body-keplerian");
 
 % Add the gimbals on the satellites
@@ -111,13 +111,18 @@ gaussianAntenna(sat2Rx,"DishDiameter",satRxConfig.DishDiameter,...
 name = "Lamia Base Station";
 lat = 38.875941904578895;
 lon = 22.437526584061686;
+%   Both VSATs placed at 10 meters
+alt = 8;
+minElevationAngle = 0;
 gs1 = groundStation(sc,Name=name,Latitude=lat,Longitude=lon,...
-    MinElevationAngle=5);
+    Altitude=alt,...
+    MinElevationAngle=minElevationAngle);
 
 latitude = 52.2294963;                                             
 longitude = 0.1487094;                                             
-gs2 = groundStation(sc,latitude,longitude,Name="Ground Station 2",...
-    MinElevationAngle=5);
+gs2 = groundStation(sc,latitude,longitude,Altitude=alt,...
+    Name="Cambridge VSAT",...
+    MinElevationAngle=minElevationAngle);
 
 % Add two gimbals on each ground station
 g1Gs1 = gimbal(gs1,"MountingAngles",[0;180;0],"MountingLocation",[0;1;-5]);
@@ -184,29 +189,69 @@ accessInterval4 = accessIntervals(access4);
 %   Create all the link objects
 %   Part1: Links between Ground Station Txs and Satellites (UL)
 link1 = link(gs1Tx1,sat1Rx);
-link2 = link(gs1Tx1,sat2Rx);
-link3 = link(gs1Tx2,sat1Rx);
+link2 = link(gs1Tx1,sat2Rx); % no link
+link3 = link(gs1Tx2,sat1Rx); % no link
 link4 = link(gs1Tx2,sat2Rx);
 %   Part2: Links between Satellites and Ground Station Receivers (DL)
 link5 = link(sat1Tx,gs2Rx1);
-link6 = link(sat1Tx,gs2Rx2);
-link7 = link(sat2Tx,gs2Rx1);
+link6 = link(sat1Tx,gs2Rx2); % no link
+link7 = link(sat2Tx,gs2Rx1); % no link
 link8 = link(sat2Tx,gs2Rx2);
 
+%   overall path
+path1 = link(gs1Tx1,sat1Rx,sat1Tx,gs2Rx1);
+path2 = link(gs1Tx2,sat2Rx,sat2Tx,gs2Rx2);
+
+%   Downlink Eb/No calculation
 [ebnr1,time1] = ebno(link5);
 [ebnr2,time2] = ebno(link8);
-
-%   Display EbNo from both links
+ebnr1(ebnr1 == -Inf | ebnr2 == -Inf) = -Inf;
+ebnr2(ebnr1 == -Inf | ebnr2 == -Inf) = -Inf;
+%   Path Eb/No calculation
+[path1_ebnr,path_time_1] = ebno(path1);
+[path2_ebnr,path_time_2] = ebno(path2);
+path1_ebnr(path1_ebnr == -Inf | path2_ebnr == -Inf) = -Inf;
+path2_ebnr(path1_ebnr == -Inf | path2_ebnr == -Inf) = -Inf;
+%   Display EbNo from both DL links
 figure;
-plot(time1,ebnr1,'LineWidth',1.5);
+plot(time1,ebnr1,'-','LineWidth',1.5);
 hold on;
-plot(time2,ebnr2,'LineWidth',1.5);
+plot(time2,ebnr2,'--','LineWidth',1.5);
 hold off;
 grid on;
 title("Received E_b/N_o from both satellites");
+legend('Path 1','Path 2');
 ylabel('E_b/N_o [dB]');
 xlabel('Simulation Time (datetime)');
 axis tight;
+
+%   Display EbNo from both paths
+figure;
+plot(path_time_1,path1_ebnr,'-o','LineWidth',1.5);
+hold on;
+plot(path_time_2,path2_ebnr,'-','LineWidth',1.5);
+hold off;
+grid on;
+title('E_b/N_o of both paths');
+legend('Path 1', 'Path 2');
+ylabel('E_b/N_o [dB]');
+xlabel('Simulation Time (datetime)');
+axis tight;
+
+% [ebnr1_ul,time1_ul] = ebno(link1);
+%   Plot multi-hop ebno to dl ebno
+figure;
+plot(path_time_1,path1_ebnr,'LineWidth',1.5);
+hold on;
+plot(time1,ebnr1,'--','LineWidth',1.5);
+% plot(time1_ul,ebnr1_ul,'-.','LineWidth',1.5);
+hold off;
+grid on;
+axis tight;
+legend('Path EbNo','DL EbNo');
+title('E_b/N_0 for path 1');
+xlabel('Simulation Time');
+ylabel('E_b/N_0 [dB]');
 
 %%  Get geometrical data for p618 losses
 ebnr1_lossy = zeros(1,length(ebnr1));
@@ -217,7 +262,8 @@ for n=1:length(time1)
     % Calculate geometry in respect of the ground station
     [~,el,r] = aer(gs2Rx1,sat1Tx,time1(n));
     if el < 5 || el > 175
-        ebnr1_lossy(n) = ebnr1(n);
+        ebnr1_lossy(n) = -Inf;
+        atmo_losses1(n) = -Inf;
         continue;
     end
     p618cfg = p618Config(AntennaDiameter=satTxConfig.DishDiameter,...
@@ -238,7 +284,8 @@ for n=1:length(time2)
     % Calculate geometry in respect of the ground station
     [~,el,r] = aer(gs2Rx2,sat2Tx,time2(n));
     if el < 5 || el > 175
-        ebnr2_lossy(n) = ebnr2(n);
+        ebnr2_lossy(n) = -Inf;
+        atmo_losses2(n) = -Inf;
         continue;
     end
     p618cfg = p618Config(AntennaDiameter=satTxConfig.DishDiameter,...
@@ -259,6 +306,17 @@ figure;
 plot(time1,ebnr1_lossy,"LineWidth",1.5);
 hold on;
 plot(time2,ebnr2_lossy,"LineWidth",1.5);
+grid on;
+axis tight;
+title("Received E_b/N_o from both satellites + p618 losses");
+ylabel('E_b/N_o [dB]');
+xlabel('Simulation Time (datetime)');
+
+%   Display path EbNo with atmosphairic losses
+figure;
+plot(path_time_1,path1_ebnr-atmo_losses1,"LineWidth",1.5);
+hold on;
+plot(path_time_2,path2_ebnr-atmo_losses2,"LineWidth",1.5);
 grid on;
 axis tight;
 title("Received E_b/N_o from both satellites + p618 losses");
@@ -299,6 +357,33 @@ ylabel('EbNo (dB)');
 xlabel('Simulated time (datetime)');
 axis tight;
 
+%%  Combining at the Receiver for full path
+%   Maximal Ratio Combining
+%   Selection Combining
+path1_ebnr_lossy = path1_ebnr - atmo_losses1;
+path2_ebnr_lossy = path2_ebnr - atmo_losses2;
+path_ebnr_mrc = 10*log10(10.^(path1_ebnr_lossy./10) + 10.^(path2_ebnr_lossy./10));
+path_ebnr_sc = 10*log10(max(10.^(path1_ebnr_lossy./10),10.^(path2_ebnr_lossy./10)));
+%   Display the Combined EbNo with both combining techniques
+figure;
+plot(path_time_1,path_ebnr_mrc,'-^','LineWidth',1.5); hold on;
+plot(path_time_1,path_ebnr_sc,'-o','LineWidth',1.5); hold off;
+grid on;
+legend('MRC','SC');
+title('Selection Combining VS Maximal Ratio Combining');
+ylabel('EbNo (dB)');
+xlabel('Simulated time (datetime)');
+axis tight;
+
+%   Display the Margin between the two techniques
+figure;
+plot(time1,abs(ebnr_mrc-ebnr_sc),'LineWidth',1.5);
+grid on;
+title('Selection Combining VS Maximal Ratio Combining');
+ylabel('EbNo (dB)');
+xlabel('Simulated time (datetime)');
+axis tight;
+
 %%  BER Calculation
 ricianChan = comm.RicianChannel( ...
     KFactor=3,...
@@ -315,7 +400,7 @@ h = zeros(1,length(ebnr_sc));
 for n=1:length(h)
     [~,h(n)] = ricianChan(0);
 end
-faded_ebnr_sc = 10*log10(abs(h).*(10.^(ebnr_sc./10)));
+faded_ebnr_sc = 10*log10(abs(h).^2.*(10.^(ebnr_sc_lossy./10)));
 branch1_ber = berawgn(faded_ebnr_sc,"qam",64);
 figure;
 semilogy(ebnr_sc,branch1_ber,'LineWidth',1.5);
