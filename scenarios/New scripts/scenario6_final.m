@@ -6,20 +6,21 @@ terminalTxConfig.Frequency = 3e10; % Hz
 terminalTxConfig.TxPower = 3; % dBW
 terminalTxConfig.DishDiameter = 0.6; % meters
 terminalTxConfig.AntennaGain = 43.2; %  dBi
-terminalTxConfig.TransmitSystemLoss = 0; % dB
+terminalTxConfig.SystemLoss = 3; % dB
 terminalTxConfig.ApertureEfficiency = gain2apertureEfficiency(...,
     terminalTxConfig.AntennaGain,...
     terminalTxConfig.DishDiameter,...
     physconst('LightSpeed')/terminalTxConfig.Frequency); % ratio
 terminalTxConfig.AntennaTemp = 150; % Kelvin
 terminalTxConfig.NoiseFigure = 1.2; % dB
+terminalTxConfig.BitRate = 10; % Mbps
 
 %   On the downlink, the receiver works on 20GHz
 terminalRxConfig = struct;
 terminalRxConfig.Frequency = 2e10;  % Hz
 terminalRxConfig.RequiredEbNo = 0;  % dB
 terminalRxConfig.MaxGainToNoiseTemperatureRatio = 18.5; % dB/K
-terminalRxConfig.ReceiverSystemLoss = 0; % dB
+terminalRxConfig.SystemLoss = 3; % dB
 terminalRxConfig.AntennaGain = 39.7; % dBi
 terminalRxConfig.DishDiameter = 0.6; % meters
 terminalRxConfig.ApertureEfficiency = gain2apertureEfficiency(...,
@@ -36,7 +37,8 @@ satTxConfig = struct;
 satTxConfig.Frequency = 2e10; % Hz
 satTxConfig.DishDiameter = 0.5; % meters
 satTxConfig.AntennaGain = 38.5; % dBi
-satTxConfig.TxPower = 20; % dB
+satTxConfig.TxPower = 7; % dB
+satTxConfig.SystemLoss = 3; % dB
 satTxConfig.EIRPDensity = 4; % dBW/MHz
 satTxConfig.ApertureEfficiency = gain2apertureEfficiency(...
     satTxConfig.AntennaGain,...
@@ -44,11 +46,13 @@ satTxConfig.ApertureEfficiency = gain2apertureEfficiency(...
     physconst('LightSpeed')/satTxConfig.Frequency); % ratio
 satTxConfig.halfBeamwidth = 1.7647; % degrees
 satTxConfig.satelliteBeamDiameter = 20e3; % meters
+satTxConfig.BitRate = 10; % Mbps
 
 satRxConfig = struct;
 satRxConfig.Frequency = 3e10;
 satRxConfig.DishDiameter = 0.33;
 satRxConfig.RequiredEbNo = 0;
+satRxConfig.SystemLoss = 3; % dB
 satRxConfig.MaxGainToNoiseTemperatureRatio = 13;
 satRxConfig.AntennaGain = 38.5;
 satRxConfig.ApertureEfficiency = gain2apertureEfficiency(...,
@@ -58,7 +62,7 @@ satRxConfig.ApertureEfficiency = gain2apertureEfficiency(...,
 
 %%  Scenario Section
 %   Scenario Simulation Time
-startTime = datetime(2020,1,11,12,0,0);
+startTime = datetime(2020,1,11,14,0,0);
 stopTime = startTime + days(1);
 sampleTime = 10;
 
@@ -69,7 +73,7 @@ sc = satelliteScenario(startTime,stopTime,sampleTime);
 %   Add satellites to the scenario
 sat1 = satellite(sc,earthRadius+600e3,0,60,0,0,0, ...
     "Name","Sat1","OrbitPropagator","two-body-keplerian");
-sat2 = satellite(sc,earthRadius+600e3,0,55,0,0,0, ...
+sat2 = satellite(sc,earthRadius+600e3,0,50,0,0,0, ...
     "Name","Sat2","OrbitPropagator","two-body-keplerian");
 
 % Add the gimbals on the satellites
@@ -82,28 +86,43 @@ g2Sat2 = gimbal(sat2,"MountingLocation",[0;-1;2]);
 sat1Tx = transmitter(g1Sat1,...
     "MountingLocation",[0;0;1], ...
     Frequency=satTxConfig.Frequency,...
-    Power=satTxConfig.TxPower);
+    Power=satTxConfig.TxPower,...
+    SystemLoss=satTxConfig.SystemLoss);
 
 sat2Tx = transmitter(g1Sat2,...
     "MountingLocation",[0;0;1], ...
     Frequency=satTxConfig.Frequency,...
-    Power=satTxConfig.TxPower);
+    Power=satTxConfig.TxPower,...
+    SystemLoss=satTxConfig.SystemLoss);
+
 %   Use gaussian Antennas for both transmitters
-gaussianAntenna(sat1Tx,"DishDiameter",satTxConfig.DishDiameter,...
+gaussianAntenna(sat1Tx,...
+    "DishDiameter",satTxConfig.DishDiameter,...
     "ApertureEfficiency",satTxConfig.ApertureEfficiency);
-gaussianAntenna(sat2Tx,"DishDiameter",satTxConfig.DishDiameter,...
+
+gaussianAntenna(sat2Tx,...
+    "DishDiameter",satTxConfig.DishDiameter,...
     "ApertureEfficiency",satTxConfig.ApertureEfficiency);
 
 %   Add receivers to the gimbals of the ground station 2
-sat1Rx = receiver(g2Sat1,"MountingLocation",[0;0;1], ...
+sat1Rx = receiver(g2Sat1,...
+    "MountingLocation",[0;0;1], ...
     GainToNoiseTemperatureRatio=satRxConfig.MaxGainToNoiseTemperatureRatio,...
-    RequiredEbNo=satRxConfig.RequiredEbNo);
-sat2Rx = receiver(g2Sat2,"MountingLocation",[0;0;1], ...
+    RequiredEbNo=satRxConfig.RequiredEbNo,...
+    SystemLoss=satRxConfig.SystemLoss);
+
+sat2Rx = receiver(g2Sat2,...
+    "MountingLocation",[0;0;1], ...
     GainToNoiseTemperatureRatio=satRxConfig.MaxGainToNoiseTemperatureRatio,...
-    RequiredEbNo=satRxConfig.RequiredEbNo);
-gaussianAntenna(sat1Rx,"DishDiameter",satRxConfig.DishDiameter,...
+    RequiredEbNo=satRxConfig.RequiredEbNo,...
+    SystemLoss=satRxConfig.SystemLoss);
+
+gaussianAntenna(sat1Rx,...
+    "DishDiameter",satRxConfig.DishDiameter,...
     "ApertureEfficiency",satRxConfig.ApertureEfficiency);
-gaussianAntenna(sat2Rx,"DishDiameter",satRxConfig.DishDiameter,...
+
+gaussianAntenna(sat2Rx,...
+    "DishDiameter",satRxConfig.DishDiameter,...
     "ApertureEfficiency",satRxConfig.ApertureEfficiency);
 
 %%  Ground Stations Section
@@ -112,7 +131,7 @@ name = "Lamia Base Station";
 lat = 38.875941904578895;
 lon = 22.437526584061686;
 %   Both VSATs placed at 10 meters
-alt = 8;
+alt = 0;
 minElevationAngle = 0;
 gs1 = groundStation(sc,Name=name,Latitude=lat,Longitude=lon,...
     Altitude=alt,...
@@ -137,25 +156,41 @@ gs1Tx1 = transmitter(g1Gs1,...
     "MountingLocation",[0;0;1], ...
     "Frequency",terminalTxConfig.Frequency,...
     "Power",terminalTxConfig.TxPower,...
-    "BitRate",10);
+    "SystemLoss",terminalTxConfig.SystemLoss,...
+    "BitRate",terminalTxConfig.BitRate);
 
-gs1Tx2 = transmitter(g2Gs1,"Name","GS1Tx2","MountingLocation",[0;0;1], ...
-    "Frequency",30e9,"Power",3,"BitRate",10);
-gaussianAntenna(gs1Tx1,"DishDiameter",terminalTxConfig.DishDiameter,...
-    "ApertureEfficiency",terminalTxConfig.ApertureEfficiency);
-gaussianAntenna(gs1Tx2,"DishDiameter",terminalTxConfig.DishDiameter,...
+gs1Tx2 = transmitter(g2Gs1,"Name","GS1Tx2",...
+    "MountingLocation",[0;0;1], ...
+    "Frequency",terminalTxConfig.Frequency,...
+    "Power",terminalTxConfig.TxPower,...
+    "BitRate",terminalTxConfig.BitRate,...
+    "SystemLoss",terminalTxConfig.SystemLoss);
+
+gaussianAntenna(gs1Tx1,...
+    "DishDiameter",terminalTxConfig.DishDiameter,...
     "ApertureEfficiency",terminalTxConfig.ApertureEfficiency);
 
-gs2Rx1 = receiver(g1Gs2,"Name","GS2Rx1",...
+gaussianAntenna(gs1Tx2,...
+    "DishDiameter",terminalTxConfig.DishDiameter,...
+    "ApertureEfficiency",terminalTxConfig.ApertureEfficiency);
+
+%   Ground Station Receivers
+gs2Rx1 = receiver(g1Gs2,...
+    "Name","GS2Rx1",...
     "MountingLocation",[0;0;1], ...
     "GainToNoiseTemperatureRatio",terminalRxConfig.MaxGainToNoiseTemperatureRatio,...
-    "RequiredEbNo",terminalRxConfig.RequiredEbNo);
+    "RequiredEbNo",terminalRxConfig.RequiredEbNo,...
+    "SystemLoss",terminalRxConfig.SystemLoss);
 
-gs2Rx2 = receiver(g2Gs2,"Name","GS2Rx2",...
+gs2Rx2 = receiver(g2Gs2,...
+    "Name","GS2Rx2",...
     "MountingLocation",[0;0;1], ...
     "GainToNoiseTemperatureRatio",terminalRxConfig.MaxGainToNoiseTemperatureRatio,...
-    "RequiredEbNo",terminalRxConfig.RequiredEbNo);
-gaussianAntenna(gs2Rx1,"DishDiameter",terminalRxConfig.DishDiameter,...
+    "RequiredEbNo",terminalRxConfig.RequiredEbNo,...
+    "SystemLoss",terminalRxConfig.SystemLoss);
+
+gaussianAntenna(gs2Rx1,...
+    "DishDiameter",terminalRxConfig.DishDiameter,...
     "ApertureEfficiency",terminalRxConfig.ApertureEfficiency);
 gaussianAntenna(gs2Rx2,"DishDiameter",terminalRxConfig.DishDiameter,...
     "ApertureEfficiency",terminalRxConfig.ApertureEfficiency);
@@ -216,7 +251,7 @@ path2_ebnr(path1_ebnr == -Inf | path2_ebnr == -Inf) = -Inf;
 figure;
 plot(time1,ebnr1,'-','LineWidth',1.5);
 hold on;
-plot(time2,ebnr2,'--','LineWidth',1.5);
+plot(time2,ebnr2,'-','LineWidth',1.5);
 hold off;
 grid on;
 title("Received E_b/N_o from both satellites");
@@ -227,7 +262,7 @@ axis tight;
 
 %   Display EbNo from both paths
 figure;
-plot(path_time_1,path1_ebnr,'-o','LineWidth',1.5);
+plot(path_time_1,path1_ebnr,'-','LineWidth',1.5);
 hold on;
 plot(path_time_2,path2_ebnr,'-','LineWidth',1.5);
 hold off;
@@ -243,7 +278,7 @@ axis tight;
 figure;
 plot(path_time_1,path1_ebnr,'LineWidth',1.5);
 hold on;
-plot(time1,ebnr1,'--','LineWidth',1.5);
+plot(time1,ebnr1,'-','LineWidth',1.5);
 % plot(time1_ul,ebnr1_ul,'-.','LineWidth',1.5);
 hold off;
 grid on;
@@ -340,8 +375,8 @@ ebnr_mrc = 10*log10(10.^(ebnr1_lossy./10) + 10.^(ebnr2_lossy./10));
 ebnr_sc = 10*log10(max(10.^(ebnr1_lossy./10),10.^(ebnr2_lossy./10)));
 %   Display the Combined EbNo with both combining techniques
 figure;
-plot(time1,ebnr_mrc,'-^','LineWidth',1.5); hold on;
-plot(time1,ebnr_sc,'-o','LineWidth',1.5); hold off;
+plot(time1,ebnr_mrc,'-','LineWidth',1.5); hold on;
+plot(time1,ebnr_sc,'-','LineWidth',1.5); hold off;
 grid on;
 legend('MRC','SC');
 title('Selection Combining VS Maximal Ratio Combining');
@@ -366,8 +401,8 @@ path_ebnr_mrc = 10*log10(10.^(path1_ebnr_lossy./10) + 10.^(path2_ebnr_lossy./10)
 path_ebnr_sc = 10*log10(max(10.^(path1_ebnr_lossy./10),10.^(path2_ebnr_lossy./10)));
 %   Display the Combined EbNo with both combining techniques
 figure;
-plot(path_time_1,path_ebnr_mrc,'-^','LineWidth',1.5); hold on;
-plot(path_time_1,path_ebnr_sc,'-o','LineWidth',1.5); hold off;
+plot(path_time_1,path_ebnr_mrc,'-','LineWidth',1.5); hold on;
+plot(path_time_1,path_ebnr_sc,'-','LineWidth',1.5); hold off;
 grid on;
 legend('MRC','SC');
 title('Selection Combining VS Maximal Ratio Combining');
@@ -377,7 +412,7 @@ axis tight;
 
 %   Display the Margin between the two techniques
 figure;
-plot(time1,abs(ebnr_mrc-ebnr_sc),'LineWidth',1.5);
+plot(time1,abs(path_ebnr_mrc-path_ebnr_sc),'LineWidth',1.5);
 grid on;
 title('Selection Combining VS Maximal Ratio Combining');
 ylabel('EbNo (dB)');
@@ -385,30 +420,121 @@ xlabel('Simulated time (datetime)');
 axis tight;
 
 %%  BER Calculation
-ricianChan = comm.RicianChannel( ...
-    KFactor=3,...
-    AveragePathGains=0,...
-    ChannelFiltering=true,...
-    DirectPathDopplerShift=0,...
-    DopplerSpectrum=doppler("Jakes"),...
-    PathDelays=0,...
-    PathGainsOutputPort=true,...
-    RandomStream="mt19937ar with seed",...
-    Seed=randi(1e6),...
-    SampleRate=1e6);
-h = zeros(1,length(ebnr_sc));
-for n=1:length(h)
-    [~,h(n)] = ricianChan(0);
-end
-faded_ebnr_sc = 10*log10(abs(h).^2.*(10.^(ebnr_sc_lossy./10)));
-branch1_ber = berawgn(faded_ebnr_sc,"qam",64);
+%   Using 8-QAM, 16-QAM and QPSK
+symbolRate = terminalRxConfig.BitRate/6;
+%   Set the sample rate to at least 4-times the symbol rate
+sampleRateChannel = max(1e6,4*symbolRate);
 figure;
-semilogy(ebnr_sc,branch1_ber,'LineWidth',1.5);
+%   8-QAM
+M = 8;
+k = log2(M);
+K = 10;
+ebnr_mrc_clean = path_ebnr_mrc(~isnan(path_ebnr_mrc) & path_ebnr_mrc ~= -Inf);
+hLOS = exp(1i*2*pi*rand(1,length(ebnr_mrc_clean))); % Thank you Emil Bjornson!
+hNLOS = sqrt(1/2)*(randn(1, ...
+    length(ebnr_mrc_clean)) + 1i*randn(1, length(ebnr_mrc_clean)));
+h = sqrt(K/(K + 1))*hLOS + sqrt(1/(K + 1))*hNLOS;
+test_ebnr = 10*log10((abs(h).^2).*(10.^((ebnr_mrc_clean)./10)));
+numSymPerFrame = 100;
+
+snrdB = convertSNR(test_ebnr, "ebno", "snr", BitsPerSymbol=k);
+berEst = zeros(size(test_ebnr));
+
+for n = 1:length(snrdB)
+    numErrs = 0;
+    numBits = 0;
+    while numErrs < 200 && numBits < 1e6
+        dataIn = randi([0 1],numSymPerFrame*k,1);
+        dataSym = bit2int(dataIn, k);
+        txSig = qammod(dataSym, M);
+        rxSig = awgn(txSig,snrdB(n),'measured')./h(n);
+        rxSym = qamdemod(rxSig,M);
+        dataOut = int2bit(rxSym,k);
+        nErrors = biterr(dataIn, dataOut);
+        numErrs = numErrs + nErrors;
+        numBits = numBits + numSymPerFrame*k;
+    end
+    berEst(n) = numErrs/numBits;
+end
+EbNoVec_theory = -10:30;
+berTheory = berfading(EbNoVec_theory,"qam",M,1,10);
+
+
+semilogy(test_ebnr,berEst,'*'); hold on;
+semilogy(EbNoVec_theory,berTheory,'LineWidth',1.5);
+
+%   QPSK
+M = 4;
+k = log2(M);
+
+snrdB = convertSNR(test_ebnr, "ebno", "snr", BitsPerSymbol=k);
+berEst = zeros(size(test_ebnr));
+
+for n = 1:length(snrdB)
+    numErrs = 0;
+    numBits = 0;
+    while numErrs < 200 && numBits < 1e6
+        dataIn = randi([0 1],numSymPerFrame*k,1);
+        dataSym = bit2int(dataIn, k);
+        txSig = pskmod(dataSym, M, pi/M);
+        rxSig = awgn(txSig,snrdB(n),'measured')./h(n);
+        rxSym = pskdemod(rxSig,M,pi/M);
+        dataOut = int2bit(rxSym,k);
+        nErrors = biterr(dataIn, dataOut);
+        numErrs = numErrs + nErrors;
+        numBits = numBits + numSymPerFrame*k;
+    end
+    berEst(n) = numErrs/numBits;
+end
+EbNoVec_theory = -10:30;
+berTheory = berfading(EbNoVec_theory,"psk",M,1,10);
+
+
+semilogy(test_ebnr,berEst,'*'); hold on;
+semilogy(EbNoVec_theory,berTheory,'LineWidth',1.5);
+
+% 16-QAM
+M = 16;
+k = log2(M);
+
+snrdB = convertSNR(test_ebnr, "ebno", "snr", BitsPerSymbol=k);
+berEst = zeros(size(test_ebnr));
+
+for n = 1:length(snrdB)
+    numErrs = 0;
+    numBits = 0;
+    while numErrs < 200 && numBits < 1e6
+        dataIn = randi([0 1],numSymPerFrame*k,1);
+        dataSym = bit2int(dataIn, k);
+        txSig = qammod(dataSym, M);
+        rxSig = awgn(txSig,snrdB(n),'measured')./h(n);
+        rxSym = qamdemod(rxSig,M);
+        dataOut = int2bit(rxSym,k);
+        nErrors = biterr(dataIn, dataOut);
+        numErrs = numErrs + nErrors;
+        numBits = numBits + numSymPerFrame*k;
+    end
+    berEst(n) = numErrs/numBits;
+end
+EbNoVec_theory = -10:30;
+berTheory = berfading(EbNoVec_theory,"qam",M,1,10);
+
+
+semilogy(test_ebnr,berEst,'*'); hold on;
+semilogy(EbNoVec_theory,berTheory,'LineWidth',1.5); hold off;
+
 grid on;
-title('Bit-Error Rate of 64-QAM for Selection Combining');
-ylabel('Bit-Error Rate');
-xlabel('E_b/N_o [dB]');
-axis tight;
+legend('Estimated BER', 'Theoretical BER');
+xlabel('Eb/No (dB)');
+ylabel('Bit Error Rate');
+text = sprintf("%d-QAM BER Analysis",M);
+title(text);
+legend('8-QAM (Simulation)','8-QAM (Theoretical)',...
+    'QPSK (Simulation)', 'QPSK (Theoretical)',...
+    '16-QAM (Simulation)','16-QAM (Theoretical)');
+
+
+
 
 %%  Helper Functions
 %   turn antenna gain into the aperture efficiency
