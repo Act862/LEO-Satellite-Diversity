@@ -28,18 +28,18 @@ g2Sat2 = gimbal(sat2,"MountingLocation",[0;-1;2]);
 % Gimbal 2 on each satellite is the receiver
 % We choose to have the same frequency on both satellites
 sat1Tx = transmitter(g1Sat1,"MountingLocation",[0;0;1], ...
-    Frequency=20e9,Power=20);
+    Frequency=20e9,Power=3);
 sat2Tx = transmitter(g1Sat2,"MountingLocation",[0;0;1], ...
-    Frequency=20e9,Power=20);
-gaussianAntenna(sat1Tx,"DishDiameter",0.5,"ApertureEfficiency",0.6447);
-gaussianAntenna(sat2Tx,"DishDiameter",0.5,"ApertureEfficiency",0.6447);
+    Frequency=20e9,Power=3);
+gaussianAntenna(sat1Tx,"DishDiameter",0.6,"ApertureEfficiency",0.5881);
+gaussianAntenna(sat2Tx,"DishDiameter",0.6,"ApertureEfficiency",0.5881);
 
 sat1Rx = receiver(g2Sat1,"MountingLocation",[0;0;1], ...
-    GainToNoiseTemperatureRatio=13,RequiredEbNo=0);
+    GainToNoiseTemperatureRatio=18.5,RequiredEbNo=0);
 sat2Rx = receiver(g2Sat2,"MountingLocation",[0;0;1], ...
-    GainToNoiseTemperatureRatio=13,RequiredEbNo=0);
-gaussianAntenna(sat1Rx,"DishDiameter",0.33,"ApertureEfficiency",0.6578);
-gaussianAntenna(sat2Rx,"DishDiameter",0.33,"ApertureEfficiency",0.6578);
+    GainToNoiseTemperatureRatio=18.5,RequiredEbNo=0);
+gaussianAntenna(sat1Rx,"DishDiameter",0.6,"ApertureEfficiency",0.5881);
+gaussianAntenna(sat2Rx,"DishDiameter",0.6,"ApertureEfficiency",0.5881);
 
 % Adding the ground stations
 name = "Lamia Base Station";
@@ -69,8 +69,8 @@ gs2Rx1 = receiver(g1Gs2,"Name","GS2Rx1","MountingLocation",[0;0;1], ...
     "GainToNoiseTemperatureRatio",18.5,"RequiredEbNo",0);
 gs2Rx2 = receiver(g2Gs2,"Name","GS2Rx2","MountingLocation",[0;0;1], ...
     "GainToNoiseTemperatureRatio",18.5,"RequiredEbNo",0);
-gaussianAntenna(gs2Rx1,"DishDiameter",0.6,"ApertureEfficiency",0.5872);
-gaussianAntenna(gs2Rx2,"DishDiameter",0.6,"ApertureEfficiency",0.5872);
+gaussianAntenna(gs2Rx1,"DishDiameter",0.6,"ApertureEfficiency",0.5881);
+gaussianAntenna(gs2Rx2,"DishDiameter",0.6,"ApertureEfficiency",0.5881);
 
 % Set the tracking of the targets for Gimbals
 % GS1Tx1 points at Sat1Rx
@@ -120,7 +120,6 @@ lint4 = linkIntervals(lnk4);
 %   Change the links
 [e1,time1] = ebno(link12);
 [e2,time2] = ebno(link22);
-%   Note that time1 is the same as time2
 
 % Plot Eb/No for each link
 % t = intersect(time1,time2);
@@ -160,7 +159,7 @@ legend('EbNo for Link1', 'EbNo for Link2');
 title('Received Eb/N_o for each link');
 
 % Combine the Eb/N0 from both links
-ebno_sc = 10*log10(max(10.^(ebno_branch1./10),10.^(ebno_branch2./10)));
+ebno_sc = max(ebno_branch1,ebno_branch2);
 ebno_mrc = 10*log10(10.^(ebno_branch1./10) + 10.^(ebno_branch2./10));
 
 figure;
@@ -170,7 +169,6 @@ legend('SC','MRC');
 title('Selection Combining VS Maximal Ratio Combining');
 ylabel('EbNo (dB)');
 xlabel('Simulated time (datetime)');
-axis tight;
 
 % Combined BER Calculation
 figure;

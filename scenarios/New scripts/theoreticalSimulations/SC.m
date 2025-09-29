@@ -47,7 +47,7 @@ for n = 1:length(snrdB)
     numErrs_sc = 0;
     numBits = 0;
     numErrs_mrc = 0;
-    while numBits < 1e6
+    while numBits < 1e5
         % Generate random bits
         dataIn = randi([0 1], numSymsPerFrame*k, 1);
 
