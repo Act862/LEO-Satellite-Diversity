@@ -251,9 +251,6 @@ legend('Uncertainty','RL Action');
 
 figure;
 %   Assume 64-QAM
-ber1 = berfading(snr_mrc,"qam",64,1,3);
-ber2 = berfading(snr_sc,"qam",64,1,3);
-ber3 = berfading(snr_adaptive,"qam",64,1,3);
-semilogy(snr_mrc,ber1,'*');hold on;
-semilogy(snr_sc,ber2,'*');
-semilogy(snr_adaptive,ber3,'*');hold off;
+semilogy(t,snr_mrc,'-*');hold on;
+semilogy(t,snr_sc,'-x');
+semilogy(t,snr_adaptive,'-o');hold off;
