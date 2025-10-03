@@ -8,6 +8,7 @@ sampleTime = 10;                    % seconds
 t = startTime:seconds(sampleTime):endTime;
 
 %% Scenario & satellites
+% There is a normal simulation file here!
 sc = satelliteScenario(startTime,endTime,sampleTime);
 sat = satellite(sc,"leoSatelliteConstellation.tle");
 
@@ -71,9 +72,9 @@ alpha = 0.1; gamma = 0.95;
 epsilon = 1.0; epsilonMin = 0.05; epsDecay = 0.999;
 
 Q = zeros(nBins,nActions);
-numEpisodes = 500; stepsPerEp = 50;
+numEpisodes = 200; stepsPerEp = 50;
 
-% --- Training phase (offline) ---
+%% --- Training phase (offline) ---
 for ep = 1:numEpisodes
     state = randi(nBins);             % start threshold index
     prevScheme = '';
@@ -121,6 +122,7 @@ end
 
 %% --- Deployment phase ---
 for k = 1:length(t)
+    %   Retrieving Eb/No values from the simulation object
     ebnr_sum_lin = 0;
     pr_sum_lin = 0;
     count_non_zeros_ebnr = 0;
