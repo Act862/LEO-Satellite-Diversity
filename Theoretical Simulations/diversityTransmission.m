@@ -9,35 +9,41 @@ img_Linear = reshape(img,[1 N*N]);
 dataIn = reshape(int2bit(img_Linear,8),...
     [1 8*N*N]);
 %   modulate data
-M = 4;
+M = 256;
 k = log2(M);
 K = 10;
 KdB = 10*log10(K);
 dataSym = bit2int(dataIn', k);
-txSig = pskmod(dataSym,M);
+txSig = qammod(dataSym,M);
 h1 = rice_fading(KdB,length(txSig),1)';
 h2 = rice_fading(KdB,length(txSig),1)';
 h3 = rice_fading(KdB,length(txSig),1)';
+h4 = rice_fading(KdB,length(txSig),1)';
 
 channelOut1 = h1.*txSig;
 channelOut2 = h2.*txSig;
 channelOut3 = h3.*txSig;
+channelOut4 = h4.*txSig;
 
-rxSig1 = awgn(channelOut1,0,"measured");
-rxSig2 = awgn(channelOut2,3,"measured");
-rxSig3 = awgn(channelOut3,-2,"measured");
+rxSig1 = awgn(channelOut1,20,"measured");
+rxSig2 = awgn(channelOut2,20,"measured");
+rxSig3 = awgn(channelOut3,20,"measured");
+rxSig4 = awgn(channelOut4,20,"measured");
 
-rxSig = [rxSig1 rxSig2 rxSig3];
-h = [h1 h2 h3];
+rxSig = [rxSig1 rxSig2 rxSig3 rxSig4];
+h = [h1 h2 h3 h4];
 r = selectionCombining(rxSig, h);
 r2 = maximalRatioCombining(rxSig,h);
-rxSym_sc = pskdemod(r,M);
-rxSym_mrc = pskdemod(r2,M);
+rxSym_sc = qamdemod(r,M);
+rxSym_mrc = qamdemod(r2,M);
 %   back to bits
 dataOut_sc = int2bit(rxSym_sc,k);
 dataOut_mrc = int2bit(rxSym_mrc,k);
 biterr(dataIn,dataOut_sc')/length(dataIn)
 biterr(dataIn,dataOut_mrc')/length(dataIn)
+
+
+
 img_Linear = bit2int(dataOut_sc,8);
 img_Linear_mrc = bit2int(dataOut_mrc,8);
 img_reconstructed = reshape(img_Linear,[N N]);
