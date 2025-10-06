@@ -9,7 +9,7 @@ M = 16;                          % M-PSK
 K = 3;
 KdB = 10*log10(K);
 k = log2(M);                    % bits per symbol
-ebnr = -20:10;   % random Eb/No samples
+ebnr = -20 + (10 - (-20)) * rand(1,100);   % random Eb/No samples
 numSymsPerFrame = 1;
 snrdB = convertSNR(ebnr,"ebno","snr",BitsPerSymbol=k);
 
@@ -20,7 +20,7 @@ for n = 1:length(snrdB)
     numErrs_sc = 0;
     numBits = 0;
     numErrs_mrc = 0;
-    while numBits < 1e6
+    while numBits < 1e6 && numErrs_mrc < 200 && numErrs_sc < 200
         % Generate random bits
         dataIn = randi([0 1], numSymsPerFrame*k, 1);
 
@@ -38,9 +38,9 @@ for n = 1:length(snrdB)
         selSig = zeros(1,length(rx1))';
         for s=1:length(rx1)
             if abs(h1(s))^2 > abs(h2(s))^2
-                selSig(s) = rx1(s);
+                selSig(s) = rx1(s)./h1(s);
             else
-                selSig(s) = rx2(s);
+                selSig(s) = rx2(s)./h2(s);
             end
         end
         selH = max(abs(h1).^2,abs(h2).^2);
@@ -49,7 +49,7 @@ for n = 1:length(snrdB)
         w1 = (1./sqrt(abs(h1).^2 + abs(h2).^2)).*h1;
         w2 = (1./sqrt(abs(h1).^2 + abs(h2).^2)).*h2;
 
-        mrcSig = (conj(w1).*rx1 + conj(w2).*rx2);
+        mrcSig = conj(w1).*rx1 + conj(w2).*rx2./(conj(w1).*h1 + conj(w2).*2);
         
         % Add AWGN after selection
         rxSig = awgn(selSig, snrdB(n), 'measured');
@@ -67,7 +67,7 @@ for n = 1:length(snrdB)
         numErrs_sc = numErrs_sc + numErrors;
         numErrs_mrc = numErrs_mrc + numErrors_mrc;
         numBits = numBits + numSymsPerFrame*k;
-    end 
+    end
     berEst(n) = numErrs_sc/numBits;
     berEst_mrc(n) = numErrs_mrc/numBits;
 end
