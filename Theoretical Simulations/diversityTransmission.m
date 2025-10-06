@@ -42,8 +42,6 @@ dataOut_mrc = int2bit(rxSym_mrc,k);
 biterr(dataIn,dataOut_sc')/length(dataIn)
 biterr(dataIn,dataOut_mrc')/length(dataIn)
 
-
-
 img_Linear = bit2int(dataOut_sc,8);
 img_Linear_mrc = bit2int(dataOut_mrc,8);
 img_reconstructed = reshape(img_Linear,[N N]);
@@ -52,7 +50,6 @@ subplot(1,2,1);
 imshow(uint8(img_reconstructed));
 subplot(1,2,2);
 imshow(uint8(img_reconstructed_mrc));
-
 
 
 %%  Helper Functions
@@ -74,7 +71,7 @@ end
 function r = selectionCombining(rxSig, h)
     % rxSig: [N x L]
     % h:     [N x L]
-    [N, L] = size(h);
+    [N, L] = size(h)
     r = zeros(N,1);
     for n = 1:N
         [~, idx] = max(abs(h(n,:)).^2);  % choose best branch
@@ -94,6 +91,7 @@ function r = maximalRatioCombining(rxSig,h)
     end
     size(h_norm)
     w = h_norm'.*h;
+    conj(w)
     %   Apply the combining
     r = sum(conj(w).*rxSig,2);
 end
