@@ -9,10 +9,10 @@ img_Linear = reshape(img,[1 N*N]);
 dataIn = reshape(int2bit(img_Linear,8),...
     [1 8*N*N]);
 %   modulate data
-M = 512;
-modtype = "QAM";
+M = 4;
+modtype = "PSK";
 k = log2(M);
-K = 3;
+K = 10^0.3; % double energy
 L = 4;  % diversity order
 KdB = 10*log10(K);
 ebnrdB = -10:15;
@@ -151,7 +151,8 @@ for i=1:length(r)
     ki = ki+Mi;
 end
 r = rt;
-r = r/sqrt(mean(abs(r).^2));
+% normalization of the channel coefficients
+% r = r/sqrt(mean(abs(r).^2));
 end
 
 function r = selectionCombining(rxSig, h)
