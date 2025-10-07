@@ -9,7 +9,7 @@ img_Linear = reshape(img,[1 N*N]);
 dataIn = reshape(int2bit(img_Linear,8),...
     [1 8*N*N]);
 %   modulate data
-M = 16;
+M = 512;
 modtype = "QAM";
 k = log2(M);
 K = 3;
@@ -24,7 +24,7 @@ dataSym = bit2int(dataIn', k);
 if modtype == "PSK"
     txSig = pskmod(dataSym,M);
 elseif modtype == "QAM"
-    txSig = qammod(dataSym,M,'gray');
+    txSig = qammod(dataSym,M,'gray','UnitAveragePower',false);
 end
 
 bitErrorRate_sc = zeros(1,length(snrdB));
@@ -61,9 +61,9 @@ for n=1:length(snrdB)
             rxSym_mrc = pskdemod(r2,M);
             rxSym_egc = pskdemod(r3,M);
         elseif modtype == "QAM"
-            rxSym_sc = qamdemod(r,M,"gray");
-            rxSym_mrc = qamdemod(r2,M,"gray");
-            rxSym_egc = qamdemod(r3,M,"gray");
+            rxSym_sc = qamdemod(r,M,"gray",'OutputType','integer');
+            rxSym_mrc = qamdemod(r2,M,"gray",'OutputType','integer');
+            rxSym_egc = qamdemod(r3,M,"gray",'OutputType','integer');
         end
         %   back to bits
         dataOut_sc = int2bit(rxSym_sc,k);
