@@ -16,7 +16,7 @@ K = 3;
 L = 4;  % diversity order
 KdB = 10*log10(K);
 ebnrdB = -10:15;
-nof_iterations = 1e6;
+nof_iterations = 1e7;
 [dataIn,paddedBits] = padSequence(dataIn,k);
 snrdB = convertSNR(ebnrdB,"ebno","snr","BitsPerSymbol",k);
 dataSym = bit2int(dataIn', k);
@@ -151,6 +151,7 @@ for i=1:length(r)
     ki = ki+Mi;
 end
 r = rt;
+r = r/sqrt(mean(abs(r).^2));
 end
 
 function r = selectionCombining(rxSig, h)
